@@ -6,14 +6,25 @@ const studentSchema = new mongoose.Schema({
   name: { type: String, required: true },
   email: { type: String, required: true, unique: true },
   password: { type: String, required: true },
-  attendanceInfo: { type: Array, default: [] },
-  courseDetails: { type: Array, default: [] },
-  feeStatus: { type: String, default: "Unpaid" },
-  complaintPortal: { type: Array, default: [] },
-  examHistory: { type: Array, default: [] },
+  profileImage: { type: String, default: null },
+
+  hasHostel: { type: Boolean, default: false },
+
+  attendanceInfo: { type: Object, default: {} },
+  courseDetails: { type: Object, default: {} },
+  feeStatus: { type: Object, default: {} },
+  complaintPortal: { type: Object, default: {} },
+  examHistory: { type: Object, default: {} },
+  results: { type: Object, default: {} },
+  timetable: { type: Object, default: {} },
+  events: { type: Object, default: {} },
+  library: { type: Object, default: {} },
+  hostel: { type: Object, default: {} },
+  others: { type: Object, default: {} },
+
   createdAt: { type: Date, default: Date.now },
 });
 
 const Student = mongoose.model("Student", studentSchema);
 
-module.exports = Student;
+export default Student;
