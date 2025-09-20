@@ -2,7 +2,7 @@ import express from "express";
 import {
     applyAdmission,
     verifyDocument,
-    makePayment,
+    makePaymentForAdmission,
     getAdmissionDetails,
     verificationFromAI
 } from "../controllers/admission.controller.js";
@@ -19,7 +19,7 @@ router.patch("/:id/verify", verifyDocument);
 
 
 // Payment
-router.post("/:id/payment", makePayment);
+router.post("/:id/payment", makePaymentForAdmission);
 
 // Get details
 router.get("/:id", getAdmissionDetails);

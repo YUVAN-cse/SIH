@@ -69,14 +69,29 @@ const admissionSchema = new mongoose.Schema(
              No verified needed (optional), but you can add it if you want staff to approve photos too.
         */
 
+       
+       //set by admin based on admission type like tuition fee for sc st etc
+       feesToBePaid: {
+           type:Number,
+           required:true
+        },
+        
         //  Payment details
         payment: {
             transactionId: String,
-            amount: Number,
+            amountPaid: {
+                type:Number,
+                default: 0,
+            },
             status: {
                 type: String,
                 enum: ["pending", "success", "failed"],
                 default: "pending",
+            },
+            mode:{
+                type: String,
+                enum: ["online", "offline"],
+                default: "online",
             },
             date: Date,
         },
@@ -99,6 +114,11 @@ const admissionSchema = new mongoose.Schema(
 
         //  Staff remarks (during verification)
         staffRemarks: { type: String , default : null },
+        bookedRoom :{
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "Hostel",
+            default: null
+        }
     },
     { timestamps: true }
 );
