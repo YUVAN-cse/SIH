@@ -1,6 +1,6 @@
 import express from 'express'
 import cors from 'cors'
-import stripe, { Stripe } from "stripe"
+import  { Stripe } from "stripe"
 import admissionRouter from './routes/admission.routes.js'
 
 const app = express()
@@ -10,7 +10,7 @@ app.use(cors({
     credentials: true
 }))
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+
 
 app.use(express.json())
 app.use(express.urlencoded({extended: true}))

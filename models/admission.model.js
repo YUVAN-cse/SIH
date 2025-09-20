@@ -7,7 +7,7 @@ const admissionSchema = new mongoose.Schema(
         studentId: {
             type: mongoose.Schema.Types.ObjectId,
             ref: "temp",
-            required:true
+            required: true
         },
 
         //  Basic student details
@@ -16,7 +16,7 @@ const admissionSchema = new mongoose.Schema(
         email: { type: String, required: true, lowercase: true },
         phone: { type: String, required: true },
 
-        
+
         //  Previous academic info (flexible for board)
         previousEducation: {
             boardOrUniversity: { type: String }, // CBSE, VTU, BMSIT, Diploma Board etc
@@ -26,13 +26,13 @@ const admissionSchema = new mongoose.Schema(
             percentage: { type: Number },
             year: { type: Number }, // e.g. 2020
         },
-        courseDetails : {
-            courseName : {
+        courseDetails: {
+            courseName: {
                 type: String,
                 required: true,
                 trim: true,
             },
-            courseCode : {
+            courseCode: {
                 type: String,
                 required: true,
                 trim: true,
@@ -71,18 +71,18 @@ const admissionSchema = new mongoose.Schema(
              No verified needed (optional), but you can add it if you want staff to approve photos too.
         */
 
-       
-       //set by admin based on admission type like tuition fee for sc st etc
-       feesToBePaid: {
-           type:Number,
-           required:true
+
+        //set by admin based on admission type like tuition fee for sc st etc
+        feesToBePaid: {
+            type: Number,
+            required: true
         },
-        
+
         //  Payment details
         payment: {
             transactionId: String,
             amountPaid: {
-                type:Number,
+                type: Number,
                 default: 0,
             },
             status: {
@@ -90,7 +90,7 @@ const admissionSchema = new mongoose.Schema(
                 enum: ["pending", "success", "failed"],
                 default: "pending",
             },
-            mode:{
+            mode: {
                 type: String,
                 enum: ["online", "offline"],
                 default: "online",
@@ -115,13 +115,13 @@ const admissionSchema = new mongoose.Schema(
 
 
         //  Staff remarks (during verification)
-        staffRemarks: { type: String , default : null },
-        bookedRoom :{
+        staffRemarks: { type: String, default: null },
+        bookedRoom: {
             type: mongoose.Schema.Types.ObjectId,
             ref: "Hostel",
             default: null
         },
-        credentialsGenerated:{
+        credentialsGenerated: {
             type: Boolean,
             default: false
         }

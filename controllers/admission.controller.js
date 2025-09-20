@@ -1,3 +1,8 @@
+import dotenv from "dotenv";
+
+dotenv.config({
+  path: "./.env",
+});
 
 import { Admission } from "../models/admission.model.js";
 import ApiResponse from "../utils/ApiResponse.js";
@@ -10,7 +15,11 @@ import digilockerSample from "../utils/digilocker.sample.js";
 import Student from "../models/student.model.js";
 import Hostel from "../models/hostel.model.js";
 import Fee from "../models/fee.model.js";
-import nanoid from "nanoid";
+import {nanoid} from "nanoid";
+import Stripe from "stripe";
+
+
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
 export const applyAdmission = async (req, res) => {
   try {
