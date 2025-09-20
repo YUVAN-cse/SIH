@@ -24,10 +24,8 @@ router.post("/login", loginStudent);
 
 router.use(verifyJWT); // Apply auth middleware to all routes below
 
-// Get student dashboard (main dashboard view)
 router.get("/dashboard", getStudentDashboard);
 
-// Get specific dashboard sections
 router.get("/attendance", getAttendanceInfo);
 router.get("/courses", getCourseDetails);
 router.get("/fees", getFeeStatus);
