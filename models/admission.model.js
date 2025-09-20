@@ -1,12 +1,13 @@
 import mongoose from "mongoose";
+import Temp from "./temp.model.js";
 
 const admissionSchema = new mongoose.Schema(
     {
         //  Link to student account
         studentId: {
             type: mongoose.Schema.Types.ObjectId,
-            ref: "User",
-            required: true,
+            ref: "temp",
+            required: true
         },
 
         //  Basic student details
@@ -15,35 +16,45 @@ const admissionSchema = new mongoose.Schema(
         email: { type: String, required: true, lowercase: true },
         phone: { type: String, required: true },
 
-        //  Admission type
-        admissionType: {
-            type: String,
-            enum: ["new", "progression", "lateral"],
-            default: "new",
-            required: true,
-        },
 
-        //  Previous academic info (flexible for board/college/university)
+        //  Previous academic info (flexible for board)
         previousEducation: {
             boardOrUniversity: { type: String }, // CBSE, VTU, BMSIT, Diploma Board etc
             rollNumber: { type: String },
             marksObtained: { type: Number },
             totalMarks: { type: Number },
             percentage: { type: Number },
-            sgpa: { type: Number },  // semester GPA
-            cgpa: { type: Number },  // cumulative GPA
-            yearOfStudy: { type: Number }, // 1,2,3 etc (useful for progression)
+            year: { type: Number }, // e.g. 2020
         },
-
+        courseDetails: {
+            courseName: {
+                type: String,
+                required: true,
+                trim: true,
+            },
+            courseCode: {
+                type: String,
+                required: true,
+                trim: true,
+            }
+        },
         //  Documents
         documents: {
             marksCard: {
                 url: String, // Cloudinary URL
                 verified: { type: Boolean, default: false },
+                badget: {
+                    type: String,
+                    enum: ["suspicious", "not suspicious", "not checked"],
+                },
             },
             idProof: {
                 url: String,
                 verified: { type: Boolean, default: false },
+                badget: {
+                    type: String,
+                    enum: ["suspicious", "not suspicious", "not checked"],
+                },
             },
             photo: { url: String },
         },
@@ -60,14 +71,29 @@ const admissionSchema = new mongoose.Schema(
              No verified needed (optional), but you can add it if you want staff to approve photos too.
         */
 
+
+        //set by admin based on admission type like tuition fee for sc st etc
+        feesToBePaid: {
+            type: Number,
+            required: true
+        },
+
         //  Payment details
         payment: {
             transactionId: String,
-            amount: Number,
+            amountPaid: {
+                type: Number,
+                default: 0,
+            },
             status: {
                 type: String,
                 enum: ["pending", "success", "failed"],
                 default: "pending",
+            },
+            mode: {
+                type: String,
+                enum: ["online", "offline"],
+                default: "online",
             },
             date: Date,
         },
@@ -86,8 +112,19 @@ const admissionSchema = new mongoose.Schema(
             default: "applied",
         },
 
+
+
         //  Staff remarks (during verification)
-        staffRemarks: { type: String },
+        staffRemarks: { type: String, default: null },
+        bookedRoom: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "Hostel",
+            default: null
+        },
+        credentialsGenerated: {
+            type: Boolean,
+            default: false
+        }
     },
     { timestamps: true }
 );

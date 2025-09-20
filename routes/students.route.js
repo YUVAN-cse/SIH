@@ -15,13 +15,14 @@ import {
   getHostel,
 } from "../controllers/student.controller.js";
 import authMiddleware from "../middlewares/authMiddleware.js"; // middleware for checking JWT token
+import { verifyJWT } from "../middlewares/studentVerify.middleware.js";
 
 const router = express.Router();
 
 // Login a student
 router.post("/login", loginStudent);
 
-router.use(authMiddleware); // Apply auth middleware to all routes below
+router.use(verifyJWT); // Apply auth middleware to all routes below
 
 // Get student dashboard (main dashboard view)
 router.get("/dashboard", getStudentDashboard);
