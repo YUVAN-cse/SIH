@@ -1,12 +1,13 @@
 import mongoose from "mongoose";
+import Temp from "./temp.model.js";
 
 const admissionSchema = new mongoose.Schema(
     {
         //  Link to student account
         studentId: {
             type: mongoose.Schema.Types.ObjectId,
-            ref: "User",
-            required: true,
+            ref: "temp",
+            required:true
         },
 
         //  Basic student details
@@ -40,10 +41,18 @@ const admissionSchema = new mongoose.Schema(
             marksCard: {
                 url: String, // Cloudinary URL
                 verified: { type: Boolean, default: false },
+                badget: {
+                    type: String,
+                    enum: ["suspicious", "not suspicious", "not checked"],
+                },
             },
             idProof: {
                 url: String,
                 verified: { type: Boolean, default: false },
+                badget: {
+                    type: String,
+                    enum: ["suspicious", "not suspicious", "not checked"],
+                },
             },
             photo: { url: String },
         },
@@ -86,8 +95,10 @@ const admissionSchema = new mongoose.Schema(
             default: "applied",
         },
 
+
+
         //  Staff remarks (during verification)
-        staffRemarks: { type: String },
+        staffRemarks: { type: String , default : null },
     },
     { timestamps: true }
 );
