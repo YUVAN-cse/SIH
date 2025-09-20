@@ -40,6 +40,7 @@ const feeSchema = new mongoose.Schema(
       enum: ["pending", "partially_paid", "paid", "overdue"],
       default: "pending",
     },
+    receiptNo: { type: String, unique: true },
   },
   { timestamps: true }
 );

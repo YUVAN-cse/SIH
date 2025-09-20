@@ -10,6 +10,7 @@ import digilockerSample from "../utils/digilocker.sample.js";
 import Student from "../models/student.model.js";
 import Hostel from "../models/hostel.model.js";
 import Fee from "../models/fee.model.js";
+import nanoid from "nanoid";
 
 export const applyAdmission = async (req, res) => {
   try {
@@ -255,6 +256,7 @@ export const onlinePaymentSuccess = async (req, res) => {
       admission.payment.transactionId = session.payment_intent;
       admission.payment.date = Date.now();
       admission.payment.mode = "online";
+      admission.feesToBePaid = 0;
       await admission.save();
 
 
@@ -277,7 +279,7 @@ export const onlinePaymentSuccess = async (req, res) => {
 
       await fee.save();
 
-      res.status(200).json(new ApiResponse(200, {admission , fee , room}));
+      res.status(200).json(new ApiResponse(200, {admission , fee , room} , "Payment successful"));
     }
     else{
       return res.status(400).json(new ApiError(400, "Payment failed"));
@@ -287,6 +289,62 @@ export const onlinePaymentSuccess = async (req, res) => {
   }
 }
 
+export const offlinePaymentSuccess = async (req, res) => {
+  try {
+    const admission = await Admission.findOne({ studentId: req.params.id });
+    admission.payment.status = "paid";
+    admission.payment.amountPaid = req.body.amountPaid;
+    admission.payment.transactionId = req.body.transactionId;
+    admission.payment.date = Date.now();
+    admission.payment.mode = "offline";
+    admission.feesToBePaid = admission.feesToBePaid - req.body.amountPaid;
+    await admission.save();
+
+    const room = admission.bookedRoom;
+    room.occupiedBy.push(req.user._id);
+    room.bookedBy = room.bookedBy.filter(id => id.toString() !== req.user._id.toString());
+    await room.save();
+
+    let fee = Fee.create({
+      studentId: admission.studentId,
+      hostelId: admission.bookedRoom,
+      type: "tuition",
+      status: "paid",
+      amount: req.body.totalAmount,
+      paidAmount: req.body.amountPaid,
+    })
+    res.status(200).json(new ApiResponse(200, { admission , fee , room } , "Payment successful"));
+  } catch (err) {
+    res.status(500).json(new ApiError(500, err.message));
+  }
+}
+
+export const studentCredentialsGeneration = async (req, res) => {
+  try {
+    const admission = await Admission.findOne({ studentId: req.user._id });
+    if (!admission) return res.status(404).json({ success: false, message: "Admission not found" });
+    
+    const tempStudent = temp.findOne({ name: admission.fullName });
+    let student = await Student.create({
+      studentId: nanoid(),
+      name:tempStudent.name,
+      email:tempStudent.email,
+      password:tempStudent.mobile,
+      mobile:tempStudent.mobile,
+      feeStatus:admission.feesToBePaid === 0 ? "Paid" : "Unpaid",
+      courseDetails:[admission.courseDetails],
+    });
+    
+    admission.credentialsGenerated = true;
+    await admission.save();
+
+    await temp.deleteOne({ name: admission.fullName });
+
+    res.status(200).json(new ApiResponse(200, student , "Credentials generated successfully"));
+  } catch (err) {
+    res.status(500).json(new ApiError(500, err.message));
+  }
+}
 
 
 // 5. Get Admission Details
@@ -299,4 +357,5 @@ export const getAdmissionDetails = async (req, res) => {
     res.status(500).json({ success: false, message: err.message });
   }
 };
+
 

@@ -16,26 +16,28 @@ const admissionSchema = new mongoose.Schema(
         email: { type: String, required: true, lowercase: true },
         phone: { type: String, required: true },
 
-        //  Admission type
-        admissionType: {
-            type: String,
-            enum: ["new", "progression", "lateral"],
-            default: "new",
-            required: true,
-        },
-
-        //  Previous academic info (flexible for board/college/university)
+        
+        //  Previous academic info (flexible for board)
         previousEducation: {
             boardOrUniversity: { type: String }, // CBSE, VTU, BMSIT, Diploma Board etc
             rollNumber: { type: String },
             marksObtained: { type: Number },
             totalMarks: { type: Number },
             percentage: { type: Number },
-            sgpa: { type: Number },  // semester GPA
-            cgpa: { type: Number },  // cumulative GPA
-            yearOfStudy: { type: Number }, // 1,2,3 etc (useful for progression)
+            year: { type: Number }, // e.g. 2020
         },
-
+        courseDetails : {
+            courseName : {
+                type: String,
+                required: true,
+                trim: true,
+            },
+            courseCode : {
+                type: String,
+                required: true,
+                trim: true,
+            }
+        },
         //  Documents
         documents: {
             marksCard: {
@@ -118,6 +120,10 @@ const admissionSchema = new mongoose.Schema(
             type: mongoose.Schema.Types.ObjectId,
             ref: "Hostel",
             default: null
+        },
+        credentialsGenerated:{
+            type: Boolean,
+            default: false
         }
     },
     { timestamps: true }
