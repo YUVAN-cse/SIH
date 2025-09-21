@@ -12,7 +12,7 @@ import {
   loginLibrarian,
   logoutLibrarian,
   getLibrarianProfile,
-} from "../controllers/library.controller.js";
+} from "../controllers/librarian.contoller.js";
 import { isAuthenticated, isLibrarian } from "../middlewares/authMiddleware.js";
 
 const router = express.Router();

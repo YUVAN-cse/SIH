@@ -58,6 +58,12 @@ export const loginLibrarian = async (req, res) => {
 
         res
             .status(200)
+            .cookie("accessToken", token, {
+                httpOnly: true,
+                secure: true,
+                sameSite: "none",
+                maxAge: 1000 * 60 * 55
+            })
             .json(new ApiResponse(200, { token, role: librarian.role, name: librarian.name }, "Login successful"));
     } catch (err) {
         res.status(500).json(new ApiError(500, err.message));
@@ -68,7 +74,14 @@ export const loginLibrarian = async (req, res) => {
 export const logoutLibrarian = async (req, res) => {
     try {
         // if using stateless JWT, client removes token from storage
-        res.status(200).json(new ApiResponse(200, {}, "Logout successful (remove token on client side)"));
+        res.status(200)
+        .clearCookie("accessToken", {
+            httpOnly: true,
+            secure: true,
+            sameSite: "none",
+            maxAge: 1000 * 60 * 55
+        })
+        .json(new ApiResponse(200, {}, "Logout successful (remove token on client side)"));
     } catch (err) {
         res.status(500).json(new ApiError(500, err.message));
     }
@@ -210,6 +223,9 @@ export const confirmPickup = async (req, res) => {
         // Mark as borrowed
         transaction.status = "borrowed";
         transaction.borrowedAt = new Date();
+        // Set return deadline (e.g., 14 days from borrowedAt)
+        transaction.returnDeadline = new Date(transaction.borrowedAt.getTime() + 14 * 24 * 60 * 60 * 1000);
+        
         await transaction.save();
 
         res.status(200).json(new ApiResponse(200, transaction));

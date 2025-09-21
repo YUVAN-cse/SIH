@@ -11,7 +11,7 @@ const BookTransactionSchema = new mongoose.Schema({
   },
 
   bookedAt: { type: Date, default: Date.now }, // when student booked
-  pickupDeadline: { type: Date , default: bookedAt + 24*60*60*1000 }, // e.g., bookedAt + 1 day
+  pickupDeadline: { type: Date }, // e.g., bookedAt + 1 day
   borrowedAt: { type: Date },
   returnedAt: { type: Date },
   cancelledAt: { type: Date },

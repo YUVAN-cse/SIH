@@ -13,8 +13,7 @@ import {
   getEvents,
   getLibrary,
   getHostel,
-} from "../controllers/student.controller.js";
-import authMiddleware from "../middlewares/authMiddleware.js"; // middleware for checking JWT token
+} from "../controllers/student.controller.js";// middleware for checking JWT token
 import { verifyJWT } from "../middlewares/studentVerify.middleware.js";
 
 const router = express.Router();
