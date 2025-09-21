@@ -36,16 +36,13 @@ router.get("/transactions", isAuthenticated, getStudentTransactions);
 router.post("/sections", isAuthenticated, isLibrarian, createSection);
 
 //  Add a new Book to Section
-router.post("/books", isAuthenticated, isLibrarian, addBook);
+router.post("/books/section/:sectionId", isAuthenticated, isLibrarian, addBook);
 
 //  Confirm Pickup (student comes to collect)
 router.patch("/pickup/:id", isAuthenticated, isLibrarian, confirmPickup);
 
 //  Confirm Return (student returns the book)
 router.patch("/return/:id", isAuthenticated, isLibrarian, confirmReturn);
-
-//  Get Overdue Books (for cron job / admin)
-router.get("/overdue", isAuthenticated, isLibrarian, getOverdueBooks);
 
 //  Register Librarian
 router.post("/register", registerLibrarian);
@@ -58,6 +55,9 @@ router.post("/logout", isAuthenticated, isLibrarian, logoutLibrarian);
 
 //  Get Librarian Profile
 router.get("/profile", isAuthenticated, isLibrarian, getLibrarianProfile);
+
+//  Get Overdue Books (for cron job / admin)
+router.get("/overdue", isAuthenticated, isLibrarian, getOverdueBooks);
 
 
 export default router;

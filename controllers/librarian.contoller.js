@@ -6,7 +6,7 @@ import ApiResponse from "../utils/ApiResponse.js";
 import Librarian from "../models/librarian.model.js";
 import jwt from "jsonwebtoken";
 
-// 🆕 Register Librarian
+//  Register Librarian
 export const registerLibrarian = async (req, res) => {
     try {
         const { name, email, password, phone } = req.body;
@@ -35,7 +35,7 @@ export const registerLibrarian = async (req, res) => {
     }
 };
 
-// 🔑 Login Librarian
+//  Login Librarian
 export const loginLibrarian = async (req, res) => {
     try {
         const { email, password } = req.body;
@@ -70,7 +70,7 @@ export const loginLibrarian = async (req, res) => {
     }
 };
 
-// 🚪 Logout Librarian
+//  Logout Librarian
 export const logoutLibrarian = async (req, res) => {
     try {
         // if using stateless JWT, client removes token from storage
@@ -87,7 +87,7 @@ export const logoutLibrarian = async (req, res) => {
     }
 };
 
-// 👤 Get Librarian Profile
+//  Get Librarian Profile
 export const getLibrarianProfile = async (req, res) => {
     try {
         const librarian = await Librarian.findById(req.user.id).select("-password");
@@ -100,8 +100,7 @@ export const getLibrarianProfile = async (req, res) => {
     }
 };
 
-
-// ✅ View All Sections with Books
+//  View All Sections with Books
 export const getLibraryMap = async (req, res) => {
     try {
         const sections = await Section.find().populate("books");
@@ -112,11 +111,11 @@ export const getLibraryMap = async (req, res) => {
     }
 };
 
-// ✅ Book a Book (Student)
+//  Book a Book (Student)
 export const bookBook = async (req, res) => {
     try {
         const { bookId } = req.params;
-        const studentId = req.user._id; // from auth middleware
+        const studentId = req.user.id; // from auth middleware
 
         const book = await Book.findById(bookId);
         if (!book) return res.status(404).json(new ApiError(404, "Book not found"));
@@ -142,10 +141,10 @@ export const bookBook = async (req, res) => {
     }
 };
 
-// ✅ View Student Transactions (Dashboard)
+//  View Student Transactions (Dashboard)
 export const getStudentTransactions = async (req, res) => {
     try {
-        const studentId = req.user._id;
+        const studentId = req.user.id;
         const transactions = await BookTransaction.find({ student: studentId })
             .populate("book")
             .sort({ createdAt: -1 });
@@ -156,7 +155,7 @@ export const getStudentTransactions = async (req, res) => {
     }
 };
 
-// ✅ Create Section
+//  Create Section
 export const createSection = async (req, res) => {
     try {
         const section = await Section.create(req.body);
@@ -166,10 +165,11 @@ export const createSection = async (req, res) => {
     }
 };
 
-// ✅ Add Book to Section
+//  Add Book to Section
 export const addBook = async (req, res) => {
     try {
-        const { sectionId, title, author, isbn, totalQuantity, rack } = req.body;
+        const {  title, author, totalQuantity, rack  } = req.body;
+        const { sectionId } = req.params;
 
         if (!sectionId || !title || !author || !totalQuantity) {
             return res.status(400).json(new ApiError(400, "All fields are required"));
@@ -182,7 +182,6 @@ export const addBook = async (req, res) => {
             section: sectionId,
             title,
             author,
-            isbn,
             totalQuantity,
             availableQuantity: totalQuantity,
             rack
@@ -194,9 +193,10 @@ export const addBook = async (req, res) => {
     }
 };
 
-// ✅ Confirm Book Pickup (Librarian)
+//  Confirm Book Pickup (Librarian)
 export const confirmPickup = async (req, res) => {
     try {
+        console.log(req.params.id);
         const transaction = await BookTransaction.findById(req.params.id).populate("book");
         if (!transaction) return res.status(404).json(new ApiError(404, "Transaction not found"));
 
@@ -234,7 +234,7 @@ export const confirmPickup = async (req, res) => {
     }
 };
 
-// ✅ Confirm Book Return (Librarian)
+//  Confirm Book Return (Librarian)
 export const confirmReturn = async (req, res) => {
     try {
         const transaction = await BookTransaction.findById(req.params.id).populate("book");
@@ -274,9 +274,7 @@ export const confirmReturn = async (req, res) => {
 */
 
 
-
-
-// ✅ Librarian: Get Overdue Borrowed Books
+//  Librarian: Get Overdue Borrowed Books
 export const getOverdueBooks = async (req, res) => {
     try {
         const now = new Date();

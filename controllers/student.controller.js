@@ -8,17 +8,27 @@ export const loginStudent = async (req, res) => {
 
   try {
     const student = await Student.findOne({ email });
+    console.log(student);
     if (!student) return res.status(400).json({ message: "Student not found" });
 
-    const isMatch = await bcrypt.compare(password, student.password);
-    if (!isMatch)
-      return res.status(400).json({ message: "Invalid credentials" });
+    // const isMatch = await bcrypt.compare(password, student.password);
+    // if (!isMatch)
+    //   return res.status(400).json({ message: "Invalid credentials" });
+
+    if(student.password !== password) return res.status(400).json({ message: "Invalid credentials" });
 
     const token = jwt.sign({ id: student._id }, "your_jwt_secret", {
       expiresIn: "1h",
     });
 
-    res.status(200).json({
+    res.status(200)
+    .cookie("accessToken", token, {
+      httpOnly: true,
+      secure: true,
+      sameSite: "none",
+      maxAge: 1000 * 60 * 55
+    })
+    .json({
       token,
       student,
       redirectTo: "/student/dashboard",
