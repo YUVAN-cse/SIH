@@ -7,9 +7,7 @@ const studentSchema = new mongoose.Schema({
   email: { type: String, required: true, unique: true },
   password: { type: String, required: true },
   profileImage: { type: String, default: null },
-
   hasHostel: { type: Boolean, default: false },
-
   attendanceInfo: { type: Object, default: {} },
   courseDetails: { type: Object, default: {} },
   feeStatus: { type: Object, default: {} },

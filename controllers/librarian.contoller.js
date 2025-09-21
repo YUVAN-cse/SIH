@@ -3,6 +3,90 @@ import Book from "../models/book.model.js";
 import BookTransaction from "../models/bookTransaction.model.js";
 import ApiError from "../utils/ApiError.js";
 import ApiResponse from "../utils/ApiResponse.js";
+import Librarian from "../models/librarian.model.js";
+import jwt from "jsonwebtoken";
+
+// 🆕 Register Librarian
+export const registerLibrarian = async (req, res) => {
+    try {
+        const { name, email, password, phone } = req.body;
+
+        if (!name || !email || !password) {
+            return res.status(400).json(new ApiError(400, "All fields are required"));
+        }
+
+        const existing = await Librarian.findOne({ email });
+        if (existing) {
+            return res.status(400).json(new ApiError(400, "Email already registered"));
+        }
+
+        const librarian = await Librarian.create({
+            name,
+            email,
+            password,
+            phone
+        });
+
+        res
+            .status(201)
+            .json(new ApiResponse(201, { id: librarian._id, email: librarian.email, role: librarian.role }, "Librarian registered successfully"));
+    } catch (err) {
+        res.status(500).json(new ApiError(500, err.message));
+    }
+};
+
+// 🔑 Login Librarian
+export const loginLibrarian = async (req, res) => {
+    try {
+        const { email, password } = req.body;
+
+        if (!email || !password) {
+            return res.status(400).json(new ApiError(400, "Email and password required"));
+        }
+
+        const librarian = await Librarian.findOne({ email });
+        if (!librarian) {
+            return res.status(404).json(new ApiError(404, "Librarian not found"));
+        }
+
+        const isMatch = await librarian.comparePassword(password);
+        if (!isMatch) {
+            return res.status(401).json(new ApiError(401, "Invalid credentials"));
+        }
+
+        const token = librarian.generateAccessToken();
+
+        res
+            .status(200)
+            .json(new ApiResponse(200, { token, role: librarian.role, name: librarian.name }, "Login successful"));
+    } catch (err) {
+        res.status(500).json(new ApiError(500, err.message));
+    }
+};
+
+// 🚪 Logout Librarian
+export const logoutLibrarian = async (req, res) => {
+    try {
+        // if using stateless JWT, client removes token from storage
+        res.status(200).json(new ApiResponse(200, {}, "Logout successful (remove token on client side)"));
+    } catch (err) {
+        res.status(500).json(new ApiError(500, err.message));
+    }
+};
+
+// 👤 Get Librarian Profile
+export const getLibrarianProfile = async (req, res) => {
+    try {
+        const librarian = await Librarian.findById(req.user.id).select("-password");
+        if (!librarian) {
+            return res.status(404).json(new ApiError(404, "Librarian not found"));
+        }
+        res.status(200).json(new ApiResponse(200, librarian));
+    } catch (err) {
+        res.status(500).json(new ApiError(500, err.message));
+    }
+};
+
 
 // ✅ View All Sections with Books
 export const getLibraryMap = async (req, res) => {

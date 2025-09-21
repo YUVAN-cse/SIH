@@ -1,21 +1,27 @@
-// middleware/authMiddleware.js
-
 import jwt from "jsonwebtoken";
-import Student from "../models/student.model.js";
-
-module.exports = async (req, res, next) => {
-  const token =
-    req.headers.authorization && req.headers.authorization.split(" ")[1];
-
+ 
+export const isAuthenticated = (req, res, next) => {
+  const token = req.cookies.accessToken;
   if (!token) {
-    return res.status(401).json({ message: "Authentication failed" });
+    return res.status(401).json(new ApiError(401, "Unauthorized"));
   }
-
+ 
   try {
-    const decoded = jwt.verify(token, "your_jwt_secret");
-    req.studentId = decoded.id;
-    next();
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    req.user = decoded;
   } catch (error) {
-    res.status(401).json({ message: "Invalid token" });
+    return res.status(401).json(new ApiError(401, "Unauthorized"));
   }
+ 
+  next();
 };
+
+
+export const isLibrarian = (req, res, next) => {
+  if (req.user.role !== "librarian") {
+    return res.status(403).json(new ApiError(403, "Forbidden"));
+  }
+ 
+  next();
+};
+
