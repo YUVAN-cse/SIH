@@ -1,62 +1,148 @@
-import express from "express";
-import multer from "multer";
-import { createWorker } from "tesseract.js";
-import fs from "fs";
+import mongoose from "mongoose";
+import path from "path"; // adjust path
+import Hostel from "./models/hostel.model.js";
 
-const app = express();
-const upload = multer({ dest: "uploads/" });
 
-// Initialize Tesseract worker
-const worker = await createWorker("eng");
-// const studentdata = {
-//   name: "YOUR_NAME",
-//   dateofbirth: "YOUR_DOB",
-//   schoolname: "YOUR_SCHOOL_NAME",
-// };
+const sampleHostelData = [
+  {
+    hostelId: "H1",
+    name: "Boys Hostel Block A",
+    address: "Campus Road, XYZ University",
+    warden: {
+      name: "Mr. Ramesh Kumar",
+      phone: "+91-9876543210",
+      email: "warden.h1@xyz.edu"
+    },
+    blocks: [
+      {
+        blockId: "A",
+        floors: [
+          {
+            floorNumber: 1,
+            rooms: [
+              {
+                roomId: "H1-A-101",
+                roomImage: "https://example.com/room-images/H1-A-101.jpg",
+                roomNumber: 101,
+                type: "double",
+                capacity: 2,
+                beds: [
+                  { bedId: "H1-A-101-1", occupiedBy: null },
+                  { bedId: "H1-A-101-2", occupiedBy: null }
+                ],
+                facilities: ["Fan", "Attached Bath"],
+                status: "active",
+                occupiedBy: [],
+                bookedBy: [],
+                pricePerStudent: 5000
+              },
+              {
+                roomId: "H1-A-102",
+                roomImage: "https://example.com/room-images/H1-A-102.jpg",
+                roomNumber: 102,
+                type: "single",
+                capacity: 1,
+                beds: [{ bedId: "H1-A-102-1", occupiedBy: null }],
+                facilities: ["AC", "Attached Bath"],
+                status: "active",
+                occupiedBy: [],
+                bookedBy: [],
+                pricePerStudent: 8000
+              },
+              {
+                roomId: "H1-A-103",
+                roomImage: "https://example.com/room-images/H1-A-103.jpg",
+                roomNumber: 103,
+                type: "triple",
+                capacity: 3,
+                beds: [
+                  { bedId: "H1-A-103-1", occupiedBy: null },
+                  { bedId: "H1-A-103-2", occupiedBy: null },
+                  { bedId: "H1-A-103-3", occupiedBy: null }
+                ],
+                facilities: ["Fan"],
+                status: "active",
+                occupiedBy: [],
+                bookedBy: [],
+                pricePerStudent: 4500
+              }
+            ]
+          },
+          {
+            floorNumber: 2,
+            rooms: [
+              {
+                roomId: "H1-A-201",
+                roomImage: "https://example.com/room-images/H1-A-201.jpg",
+                roomNumber: 201,
+                type: "double",
+                capacity: 2,
+                beds: [
+                  { bedId: "H1-A-201-1", occupiedBy: null },
+                  { bedId: "H1-A-201-2", occupiedBy: null }
+                ],
+                facilities: ["Fan", "Attached Bath"],
+                status: "active",
+                occupiedBy: [],
+                bookedBy: [],
+                pricePerStudent: 5200
+              },
+              {
+                roomId: "H1-A-202",
+                roomImage: "https://example.com/room-images/H1-A-202.jpg",
+                roomNumber: 202,
+                type: "single",
+                capacity: 1,
+                beds: [{ bedId: "H1-A-202-1", occupiedBy: null }],
+                facilities: ["AC", "Attached Bath"],
+                status: "active",
+                occupiedBy: [],
+                bookedBy: [],
+                pricePerStudent: 8500
+              },
+              {
+                roomId: "H1-A-203",
+                roomImage: "https://example.com/room-images/H1-A-203.jpg",
+                roomNumber: 203,
+                type: "triple",
+                capacity: 3,
+                beds: [
+                  { bedId: "H1-A-203-1", occupiedBy: null },
+                  { bedId: "H1-A-203-2", occupiedBy: null },
+                  { bedId: "H1-A-203-3", occupiedBy: null }
+                ],
+                facilities: ["Fan"],
+                status: "active",
+                occupiedBy: [],
+                bookedBy: [],
+                pricePerStudent: 4600
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+];
 
-// Serve upload form
-app.get("/", (req, res) => {
-  res.send(`
-    <h2>Upload a Document for OCR</h2>
-    <form method="POST" action="/upload" enctype="multipart/form-data">
-      <input type="file" name="document" accept=".png,.jpg,.jpeg" required />
-      <button type="submit">Upload & Process</button>
-    </form>
-  `);
-});
 
-// Handle file upload and OCR
-app.post("/upload", upload.single("document"), async (req, res) => {
-  if (!req.file) return res.status(400).send("No file uploaded");
 
+// Connect to MongoDB
+mongoose.connect("mongodb://localhost:27017/SIH");
+
+
+// Insert sample data
+async function importSampleData() {
   try {
-    const {
-      data: { text },
-    } = await worker.recognize(req.file.path);
+    
+    await Hostel.deleteMany();
+    const inserted = await Hostel.insertMany(sampleHostelData);
+    console.log(`✅ Inserted ${inserted.length} hostel records`);
 
-    // Delete uploaded file
-    fs.unlink(req.file.path, () => {});
-
-    res.send(`
-      <h2>OCR Result</h2>
-      <textarea rows="20" cols="80">${text}</textarea>
-      <br /><a href="/">Upload another document</a>
-    `);
-    // if (
-    //   text.toLowerCase().includes(studentdata.name.toLowerCase()) &&
-    //   text.toLowerCase().includes(studentdata.dateofbirth.toLowerCase()) &&
-    //   text.toLowerCase().includes(studentdata.schoolname.toLowerCase())
-    // ) {
-    //   console.log("Verified Student");
-    // } else {
-    //   console.log("Unverified Student");
-    // }
+    mongoose.connection.close();
   } catch (err) {
     console.error(err);
-    res.status(500).send("OCR failed");
   }
-});
+}
 
-app.listen(3000, () =>
-  console.log("OCR server running at http://localhost:3000")
-);
+importSampleData();

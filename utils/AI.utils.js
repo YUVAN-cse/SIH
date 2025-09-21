@@ -1,29 +1,27 @@
-/**
- * Compare two JSON objects using Gemini API and return a classification
- * @param {object} json1 - First JSON object
- * @param {object} json2 - Second JSON object
- * @param {string} apiKey - Your Gemini API key
- * @returns {Promise<string>} - One of: 'not suspicious', 'suspicious', 'not checked'
- */
-async function compareJsonObjects(json1, json2) {
+async function compareData(data1, data2) {
     const apiKey = process.env.GEMINI_API_KEY;
     const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
 
+    const isJson1 = typeof data1 === "object" && data1 !== null;
+    const isJson2 = typeof data2 === "object" && data2 !== null;
+
+    const formatData = (d) => (typeof d === "object" && d !== null ? JSON.stringify(d, null, 2) : d);
+
     const prompt = `
-        You are a JSON comparison assistant. Your task is to compare the contents of two JSON objects, which may have different key names but represent the same data. The goal is to determine if the data is consistent or if there are discrepancies.
+        You are a data comparison assistant. Compare the following two inputs and determine if they are consistent.
 
-        JSON 1:
-        ${JSON.stringify(json1, null, 2)}
+        Data 1:
+        ${formatData(data1)}
 
-        JSON 2:
-        ${JSON.stringify(json2, null, 2)}
+        Data 2:
+        ${formatData(data2)}
 
-        Based on a comparison of the content and values, provide a single-word classification:
+        Provide a single-word classification:
         - 'not suspicious' if the data is consistent and matches.
         - 'suspicious' if there are significant discrepancies or inconsistencies.
-        - 'not checked' if the data is too sparse or unstructured to perform a reliable comparison.
+        - 'not checked' if the data is too sparse or unstructured to reliably compare.
 
-        Strictly return only one of the three classifications as a string. Do not add any other text or commentary.
+        Strictly return only one of the three classifications as a string. No additional commentary.
     `;
 
     const payload = {
@@ -52,9 +50,9 @@ async function compareJsonObjects(json1, json2) {
         return classification;
 
     } catch (err) {
-        console.error('Error comparing JSON objects:', err);
+        console.error('Error comparing data:', err);
         throw err;
     }
 }
 
-export {compareJsonObjects}
+export { compareData };

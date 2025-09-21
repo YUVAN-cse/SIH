@@ -30,6 +30,11 @@ const feeSchema = new mongoose.Schema(
       default: 0,
       min: 0,
     },
+    pendingAmount: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
     fine: {
       type: Number,
       default: 0,

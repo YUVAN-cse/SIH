@@ -9,8 +9,12 @@ import connectDB from "./db/db.config.js";
 
 const PORT = 5000;
 
-// connectDB()
-//   .then(() =>
-//   )
-//   .catch((error) => console.log(error));
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+connectDB().then(() => {
+    app.listen(PORT, () => {
+        console.log(`Server is running on port ${PORT}`);
+    });
+})
+.catch((error) => {
+  console.error("Database connection failed:", error.message);
+  process.exit(1);
+});

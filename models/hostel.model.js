@@ -18,7 +18,7 @@ const HostelSchema = new mongoose.Schema({
           rooms: [
             {
               roomId: { type: String, required: true }, // e.g. H1-A-101
-              roomImage: { type: String , required: true },
+              roomImage: { type: String ,  }, //required: true
               roomNumber: { type: Number, required: true },
               type: { type: String, enum: ["single", "double", "triple", "dorm"], required: true },
               capacity: { type: Number, required: true },

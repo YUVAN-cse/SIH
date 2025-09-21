@@ -7,7 +7,14 @@ import Fee from "../models/fee.model.js";
 // The user’s browser will automatically download the generated receipt PDF.
 export const downloadReceiptForAdmissionFeePayment = async (req, res) => {
   // const fee = await Fee.findById(req.params.id).populate("studentId hostelId");
-  const fee = await Fee.findOne({ studentId: req.user._id }).populate("studentId hostelId");
+  const fee = await Fee.findOne({ studentId: req.user.id }).populate("studentId").populate({
+    path: "hostelId",
+    populate: {
+      path: "blocks.floors.rooms",
+      model: "Hostel",
+    },
+  });
+  ;
 
   if (!fee) return res.status(404).json(new ApiError(404, "Receipt not found"));
 

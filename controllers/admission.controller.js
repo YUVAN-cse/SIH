@@ -7,22 +7,25 @@ dotenv.config({
 import { Admission } from "../models/admission.model.js";
 import ApiResponse from "../utils/ApiResponse.js";
 import ApiError from "../utils/ApiError.js";
-import temp from "../models/temp.model.js";
+import Temp from "../models/temp.model.js";
 import uploadOnCloudinary from "../utils/cloudinary.js";
-import { compareJsonObjects } from "../utils/AI.utils.js";
+import { compareData } from "../utils/AI.utils.js";
 import sample from "../utils/digilocker.sample.js";
 import digilockerSample from "../utils/digilocker.sample.js";
 import Student from "../models/student.model.js";
 import Hostel from "../models/hostel.model.js";
 import Fee from "../models/fee.model.js";
-import {nanoid} from "nanoid";
+import { nanoid } from "nanoid";
 import Stripe from "stripe";
+import { validate } from "node-cron";
+import { detectTextFromImageUri } from "../utils/OCRLogic.js";
 
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
 export const applyAdmission = async (req, res) => {
   try {
+
     if (!req.body) {
       res.status(400).json(new ApiError(400, "All fields are required"));
     }
@@ -35,33 +38,52 @@ export const applyAdmission = async (req, res) => {
     let idProofURL = await uploadOnCloudinary(req.files.idProof[0].path);
     let photoURL = await uploadOnCloudinary(req.files.photo[0].path);
 
-    req.body.documents["photo"] = photoURL;
-
-    req.body.documents["idProof"] = idProofURL;
-    req.body.documents["marksCard"] = markscardURL;
+    console.log(markscardURL.secure_url, idProofURL.secure_url, photoURL.secure_url);
 
 
-    const admission = new Admission(req.body);
+    let documents = {};
+
+    documents.marksCard = {
+      url: markscardURL.secure_url,
+      verified: false,
+    };
+
+    documents.idProof = {
+      url: idProofURL.secure_url,
+      verified: false,
+    };
+
+    documents.photo = {
+      url: photoURL.secure_url,
+    };
+
+    req.body.documents = documents;
+    const admission = await Admission.create(req.body);
 
     if (!admission) {
       res.status(400).json(new ApiError(400, "Admission Failed"));
     }
 
-    const tempSudentDetail = await temp.create({
-      name: req.body.fullName,
+
+    let tempSudentDetail = await Temp.insertOne({
+      name: req.body.name,
       email: req.body.email,
-      password: req.body.phone,
-      mobile: req.body.phone,
-      status: "pending",
-    })
+      password: req.body.mobile,
+      mobile: req.body.mobile,
+      status: "draft",
+    });
+
+    await tempSudentDetail.save();
 
     let accessToken = tempSudentDetail.generateAccessToken();
 
-    let student = temp.findOne({ email: req.body.email })
+    let student = Temp.findOne({ email: req.body.email })
 
-    admission.studentId = student._id;
     admission.admissionStatus = "applied";
-    await admission.save();
+
+    await admission.save({ validateBeforeSave: false });
+
+    console.log(admission);
     res.status(201)
       .cookie("accessToken", accessToken, { httpOnly: true })
       .json(new ApiResponse(true, admission));
@@ -72,7 +94,8 @@ export const applyAdmission = async (req, res) => {
 
 export const verificationFromAI = async (req, res) => {
   try {
-    const user = req.user._id
+
+    const user = req.user.id
 
     const admission = await Admission.findOne({ studentId: user._id });
 
@@ -85,24 +108,26 @@ export const verificationFromAI = async (req, res) => {
     const idProof = await detectTextFromImageUri(documents.idProof.url);
     const marksCard = await detectTextFromImageUri(documents.marksCard.url);
 
+    let result1 = await compareData(marksCard, digilockerSample.doc);
+    let result2 = await compareData(idProof, digilockerSample.idProof);
+    let result3 = await compareData(digilockerSample.idProof, digilockerSample.idProof);
 
-    let result1 = compareJsonObjects(marksCard, digilockerSample.doc);
-    let result2 = compareJsonObjects(marksCard, digilockerSample.idProof);
+    console.log(result1, result2, result3);
 
-    if (result1.status && result2.status) {
+    if (result1 && result2) {
+      console.log("Verified");
       admission.documents.marksCard.badget = result1;
       admission.documents.idProof.badget = result2;
       admission.admissionStatus = "under_review"
       await admission.save();
     }
 
-    res.status(200).json(new ApiResponse(true, { idProof, marksCard }));
+    res.status(200).json(new ApiResponse(true, { result1, result2 }));
 
   } catch (err) {
     res.status(500).json(new ApiError(500, err.message));
   }
 };
-
 // 2. Verify Document (Staff)
 export const verifyDocument = async (req, res) => {
   try {
@@ -130,6 +155,7 @@ export const verifyDocument = async (req, res) => {
   }
 };
 
+
 export const getAllHostelsInfo = async (req, res) => {
   try {
     const hostels = await Hostel.find();
@@ -144,43 +170,74 @@ export const getAllHostelsInfo = async (req, res) => {
 
 export const bookHostelRoom = async (req, res) => {
   try {
-    let { hostelId, roomId } = req.params;
-    const room = await HostelRoom.findOne({ roomId: roomId, hostelId: hostelId });
-    if (!room) {
-      return res.status(404).json(new ApiError(404, "Room not found"));
-    }
-    let student = req.user._id;
-    const admission = await Admission.findOne({ studentId: student });
+    const { hostelId, roomId } = req.params;
+    const studentId = req.user.id;
+    const studentEmail = req.user.email;
 
-    if (!admission) {
-      return res.status(404).json(new ApiError(404, "Admission not found"));
-    }
+    const hostel = await Hostel.findOne({ hostelId });
+    if (!hostel) return res.status(404).json(new ApiError(404, "Hostel not found"));
 
+    const admission = await Admission.findOne({ email: studentEmail });
+    if (!admission) return res.status(404).json(new ApiError(404, "Admission not found"));
     if (admission.admissionStatus !== "verified") {
       return res.status(400).json(new ApiError(400, "Admission not verified"));
     }
 
-    if (room.capacity <= room.bookedBy.length || room.capacity === 0 || room.bookedBy.includes(student) || room.status !== "active" || room.capacity <= room.occupiedBy.length) {
+    // Find the room inside blocks → floors → rooms
+    let roomFound = null;
+    for (const block of hostel.blocks) {
+      for (const floor of block.floors) {
+        const room = floor.rooms.find(r => r.roomId === roomId);
+        if (room) {
+          roomFound = room;
+          break;
+        }
+      }
+      if (roomFound) break;
+    }
+
+    if (!roomFound) return res.status(404).json(new ApiError(404, "Room not found"));
+
+    // Check if room is available
+
+
+    if (
+      roomFound.capacity <= roomFound.bookedBy.length ||
+      roomFound.capacity === 0 ||
+      roomFound.bookedBy.includes(studentId) ||
+      roomFound.occupiedBy.includes(studentId) ||
+      roomFound.status !== "active" ||
+      roomFound.capacity <= roomFound.occupiedBy.length
+    ) {
       return res.status(400).json(new ApiError(400, "Room not available"));
     }
 
-    room.bookedBy.push(student);
-    admission.bookedRoom = room;
 
+    // Book room
+
+    admission.feesToBePaid += roomFound.pricePerStudent;
+    roomFound.bookedBy.push(studentId);
+    admission.bookedRoom = roomFound;
+    admission.bookedRoomInWhichHostel = hostel.hostelId;
+
+    await hostel.save();
     await admission.save();
+
     res.status(200).json(new ApiResponse(200, admission));
   } catch (error) {
-    return res.status(500).json(new ApiError(500, err.message));
+    res.status(500).json(new ApiError(500, error.message));
   }
-}
+};
 
 // 4. Payment
 export const makePaymentForAdmission = async (req, res) => {
   try {
 
-    const student = req.user._id;
+    const student = req.user.id;
+    const email = req.user.email;
 
-    const admission = await Admission.findOne({ studentId: student });
+    const admission = await Admission.findOne({ email });
+    console.log(admission);
     if (!admission) {
       return res.status(404).json(new ApiError(404, "Admission not found"));
     }
@@ -195,45 +252,14 @@ export const makePaymentForAdmission = async (req, res) => {
 
     let amount = admission.feesToBePaid - admission.payment.amountPaid;
 
-    if (!isNull(admission.bookedRoom)) {
-      //flag red
-      const bookedBy = req.user._id; // assume you pass studentId or tempId here
-
-      // Find the hostel containing the booked student
-      const hostel = await Hostel.findOne({ "blocks.floors.rooms.bookedBy": bookedBy });
-
-      if (!hostel) {
-        return res.status(404).json(new ApiError(404, "Hostel not found"));
-      }
-
-      // Traverse to find the actual room
-      let foundRoom = null;
-      hostel.blocks.forEach(block => {
-        block.floors.forEach(floor => {
-          floor.rooms.forEach(room => {
-            if (room.bookedBy.some(id => id.toString() === bookedBy)) {
-              foundRoom = room;
-            }
-          });
-        });
-      });
-
-      if (!foundRoom) {
-        return res.status(404).json(new ApiError(404, "Room not found for this student"));
-      }
-
-      amount += foundRoom.pricePerStudent
-
-    }
-
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
       line_items: [
         {
           price_data: {
-            currency: 'usd',
+            currency: 'inr',
             product_data: {
-              name: student.name,
+              name: admission.name,
               images: [admission.documents.photo.url],
             },
             unit_amount: amount * 100,
@@ -242,10 +268,9 @@ export const makePaymentForAdmission = async (req, res) => {
         },
       ],
       mode: 'payment',
-      success_url: `${process.env.CLIENT_URL}/payment/success?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${process.env.CLIENT_URL}/payment/cancel`,
+      success_url: `${process.env.CLIENT_URI}/payment/success?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${process.env.CLIENT_URI}/payment/cancel`,
     })
-
 
 
     res.status(200).json(new ApiResponse(200, { url: session.url }))
@@ -259,44 +284,70 @@ export const onlinePaymentSuccess = async (req, res) => {
     const session = await stripe.checkout.sessions.retrieve(req.query.session_id);
 
     if (session.payment_status === "paid") {
-      const admission = await Admission.findOne({ studentId: req.user._id });
-      admission.payment.status = "paid";
+      let admission = await Admission.findOne({ email: req.user.email });
+      if (!admission) {
+        return res.status(404).json(new ApiError(404, "Admission not found"));
+      }
+
+      if (admission.bookedRoom !== null || admission.bookedRoomInWhichHostel !== null) {
+        admission.confirmedRoom = admission.bookedRoom;
+        admission.bookedRoom = null;
+      }
+      // Update admission payment details
+      admission.payment.status = "success";
       admission.payment.amountPaid = session.amount_total / 100;
-      admission.payment.transactionId = session.payment_intent;
+      admission.payment.transactionId = session.payment_intent || "txn_mock";
       admission.payment.date = Date.now();
       admission.payment.mode = "online";
       admission.feesToBePaid = 0;
       await admission.save();
 
+      // Get booked room info
+      const { bookedRoom, bookedRoomInWhichHostel } = admission;
 
-      const room = admission.bookedRoom;
-      room.occupiedBy.push(req.user._id);
-      room.bookedBy = room.bookedBy.filter(id => id.toString() !== req.user._id.toString());
-      await room.save();
+      // Find hostel containing this room
+      const hostel = await Hostel.findOne({ hostelId: bookedRoomInWhichHostel });
+      if (!hostel) {
+        return res.status(404).json(new ApiError(404, "Hostel not found"));
+      }
 
+      let foundRoom = null;
+      hostel.blocks.forEach(block => {
+        block.floors.forEach(floor => {
+          floor.rooms.forEach(room => {
+            if (room.roomId === bookedRoom) {
+              // Update occupants
+              if (!room.occupiedBy.includes(req.user._id)) {
+                room.occupiedBy.push(req.user.id);
+              }
+              room.bookedBy = room.bookedBy.filter(
+                id => id.toString() !== req.user.id.toString()
+              );
+              foundRoom = room;
+            }
+          });
+        });
+      });
 
-      let student = req.user._id;
+      if (!foundRoom) {
+        return res.status(404).json(new ApiError(404, "Room not found"));
+      }
 
-      let fee = Fee.create({
-        studentId: student,
-        hostelId: admission.bookedRoom,
-        type: "tuition",
-        status: "paid",
-        amount: session.amount_total / 100,
-        paidAmount: session.amount_total / 100,
-      })
+      // Save hostel with updated room data
+      await hostel.save();
 
-      await fee.save();
-
-      res.status(200).json(new ApiResponse(200, {admission , fee , room} , "Payment successful"));
-    }
-    else{
+      res
+        .status(200)
+        .json(
+          new ApiResponse(200, { admission, room: foundRoom }, "Payment successful")
+        );
+    } else {
       return res.status(400).json(new ApiError(400, "Payment failed"));
     }
   } catch (err) {
     res.status(500).json(new ApiError(500, err.message));
   }
-}
+};
 
 export const offlinePaymentSuccess = async (req, res) => {
   try {
@@ -322,7 +373,7 @@ export const offlinePaymentSuccess = async (req, res) => {
       amount: req.body.totalAmount,
       paidAmount: req.body.amountPaid,
     })
-    res.status(200).json(new ApiResponse(200, { admission , fee , room } , "Payment successful"));
+    res.status(200).json(new ApiResponse(200, { admission, fee, room }, "Payment successful"));
   } catch (err) {
     res.status(500).json(new ApiError(500, err.message));
   }
@@ -330,26 +381,45 @@ export const offlinePaymentSuccess = async (req, res) => {
 
 export const studentCredentialsGeneration = async (req, res) => {
   try {
-    const admission = await Admission.findOne({ studentId: req.user._id });
+    const admission = await Admission.findOne({ email: req.user.email });
+    console.log("admission", admission)
     if (!admission) return res.status(404).json({ success: false, message: "Admission not found" });
-    
-    const tempStudent = temp.findOne({ name: admission.fullName });
+
+    const tempStudent = await Temp.findOne({ name: admission.name });
+
+    console.log(tempStudent);
+
     let student = await Student.create({
-      studentId: nanoid(),
-      name:tempStudent.name,
-      email:tempStudent.email,
-      password:tempStudent.mobile,
-      mobile:tempStudent.mobile,
-      feeStatus:admission.feesToBePaid === 0 ? "Paid" : "Unpaid",
-      courseDetails:[admission.courseDetails],
+      studentId: req.user.id,
+      name: tempStudent.name,
+      email: tempStudent.email,
+      password: tempStudent.mobile,
+      profileImage: admission.documents.photo.url,
+      hasHostel: admission.confirmedRoom ? true : false,
+      mobile: tempStudent.mobile,
+      feeStatus: admission.feesToBePaid === 0 ? "Paid" : "Unpaid",
+      courseDetails: [admission.courseDetails],
+      receiptNo: admission.payment.status === "paid" ? admission.payment.transactionId : nanoid(),
     });
-    
+
     admission.credentialsGenerated = true;
     await admission.save();
 
-    await temp.deleteOne({ name: admission.fullName });
+    await Temp.deleteOne({ name: admission.fullName });
 
-    res.status(200).json(new ApiResponse(200, student , "Credentials generated successfully"));
+    // Create fee record
+    const fee = await Fee.create({
+      studentId: req.user.id,
+      hostelId: bookedRoomInWhichHostel,
+      roomId: bookedRoom,
+      type: "tuition",
+      status: "paid",
+      amount : admission.feesToBePaid,
+      paidAmount : admission.payment.amountPaid,
+      pendingAmount : admission.feesToBePaid - admission.payment.amountPaid
+    });
+
+    res.status(200).json(new ApiResponse(200, { student, fee }, "Credentials generated successfully"));
   } catch (err) {
     res.status(500).json(new ApiError(500, err.message));
   }
@@ -359,12 +429,15 @@ export const studentCredentialsGeneration = async (req, res) => {
 // 5. Get Admission Details
 export const getAdmissionDetails = async (req, res) => {
   try {
-    const admission = await Admission.findById(req.params.id).populate("studentId");
+    const admission = await Admission.findOne(req.body.email);
+    const student = await Student.findOne({ email: req.body.email });
     if (!admission) return res.status(404).json({ success: false, message: "Admission not found" });
-    res.json({ success: true, admission });
+    res.json(new ApiResponse(200, { admission, student }, "Admission details fetched successfully"));
   } catch (err) {
-    res.status(500).json({ success: false, message: err.message });
+    res.status(500).json(new ApiError(500, err.message));
   }
 };
+
+
 
 

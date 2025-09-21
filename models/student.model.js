@@ -9,15 +9,15 @@ const studentSchema = new mongoose.Schema({
   profileImage: { type: String, default: null },
   hasHostel: { type: Boolean, default: false },
   attendanceInfo: { type: Object, default: {} },
-  courseDetails: { type: Object, default: {} },
   feeStatus: { type: Object, default: {} },
   complaintPortal: { type: Object, default: {} },
   examHistory: { type: Object, default: {} },
   results: { type: Object, default: {} },
   timetable: { type: Object, default: {} },
-  events: { type: Object, default: {} },
   library: { type: Object, default: {} },
   hostel: { type: Object, default: {} },
+  
+  courseDetails: { type: Object, default: {} },
   others: { type: Object, default: {} },
 
   createdAt: { type: Date, default: Date.now },

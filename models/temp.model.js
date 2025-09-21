@@ -4,7 +4,7 @@ import jwt from "jsonwebtoken";
 
 const tempSchema = new mongoose.Schema(
   {
-    name: { type: String, required: true, unique: true },
+    name: { type: String, required: true },
     email: { type: String, required: true, unique: true },
     password: { type: String, required: true },
     mobile: { type: String, required: true, unique: true },
@@ -35,5 +35,6 @@ tempSchema.methods.generateAccessToken = function () {
   );
 };
 
-const Temp = mongoose.model("Temp", tempSchema);
-export default Temp;
+
+let Temp = mongoose.model("Temp", tempSchema);
+export default Temp ;

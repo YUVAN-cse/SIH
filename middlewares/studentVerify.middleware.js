@@ -1,3 +1,6 @@
+
+
+
 import jwt from "jsonwebtoken";
 import temp from "../models/temp.model.js";
 import ApiError from "../utils/ApiError.js";
@@ -10,7 +13,7 @@ export const verifyJWT = (req, res, next) => {
     }
 
     try {
-        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        const decoded = jwt.decode(token, process.env.JWT_SECRET);
         req.user = decoded;
     } catch (error) {
         return res.status(401).json(new ApiError(401, "Unauthorized"));

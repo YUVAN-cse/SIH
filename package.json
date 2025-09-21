@@ -15,6 +15,7 @@
   "dependencies": {
     "@google-cloud/vision": "^5.3.3",
     "@google/genai": "^1.20.0",
+    "axios": "^1.12.2",
     "bcryptjs": "^3.0.2",
     "cloudinary": "^2.7.0",
     "cookie-parser": "^1.4.7",
@@ -27,6 +28,7 @@
     "multer": "^2.0.2",
     "nanoid": "^5.1.5",
     "node-cron": "^4.2.1",
+    "os": "^0.1.2",
     "pdfkit": "^0.17.2",
     "stripe": "^18.5.0",
     "tesseract.js": "^6.0.1"

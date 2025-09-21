@@ -1,20 +1,14 @@
 import mongoose from "mongoose";
 import Temp from "./temp.model.js";
+import Hostel from "./hostel.model.js";
 
 const admissionSchema = new mongoose.Schema(
     {
-        //  Link to student account
-        studentId: {
-            type: mongoose.Schema.Types.ObjectId,
-            ref: "temp",
-            required: true
-        },
-
+    
         //  Basic student details
-        fullName: { type: String, required: true, trim: true },
-        dob: { type: Date, required: true },
+        name: { type: String, required: true, trim: true },
         email: { type: String, required: true, lowercase: true },
-        phone: { type: String, required: true },
+        mobile: { type: String, required: true },
 
 
         //  Previous academic info (flexible for board)
@@ -29,12 +23,12 @@ const admissionSchema = new mongoose.Schema(
         courseDetails: {
             courseName: {
                 type: String,
-                required: true,
+                // required: true,
                 trim: true,
             },
             courseCode: {
                 type: String,
-                required: true,
+                // required: true,
                 trim: true,
             }
         },
@@ -117,6 +111,16 @@ const admissionSchema = new mongoose.Schema(
         //  Staff remarks (during verification)
         staffRemarks: { type: String, default: null },
         bookedRoom: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "Hostel",
+            default: null
+        },
+        bookedRoomInWhichHostel:{
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "Hostel",
+            default: null
+        },
+        confirmedRoom: {
             type: mongoose.Schema.Types.ObjectId,
             ref: "Hostel",
             default: null
