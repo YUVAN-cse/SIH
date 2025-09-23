@@ -8,15 +8,24 @@ export const isAuthenticated = (req, res, next) => {
   }
  
   try {
-    const decoded = jwt.decode(token, process.env.JWT_SECRET);
+    // Fix 1: Use jwt.verify instead of jwt.decode for security
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
     req.user = decoded;
+    
   } catch (error) {
-    return res.status(401).json(new ApiError(401, "Unauthorized"));
+    return res.status(401).json(new ApiError(401, "Invalid or expired token"));
   }
  
   next();
 };
 
+// Student-specific middleware
+export const isStudent = (req, res, next) => {
+  if (req.user?.role !== "student") {
+    return res.status(403).json(new ApiError(403, "Access denied - Student role required"));
+  }
+  next();
+};
 
 export const isLibrarian = (req, res, next) => {
   if (req.user?.role !== "librarian") {
@@ -32,7 +41,6 @@ export const isAdmin = (req, res, next) => {
   }
   next();
 };
-
 
 export const isSuperAdmin = (req, res, next) => {
   if (req.user?.role !== "superadmin") {

@@ -19,19 +19,22 @@ import { nanoid } from "nanoid";
 import Stripe from "stripe";
 import { validate } from "node-cron";
 import { detectTextFromImageUri } from "../utils/OCRLogic.js";
+import mongoose from "mongoose";
 
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
 export const applyAdmission = async (req, res) => {
   try {
-
+   console.log("req.body:", req.body);
+console.log("req.file:", req.file);
+console.log("req.files:", req.files);
     if (!req.body) {
-      res.status(400).json(new ApiError(400, "All fields are required"));
+      return res.status(400).json(new ApiError(400, "All fields are required"));
     }
 
     if (!req.files) {
-      res.status(400).json(new ApiError(400, "All fields are required"));
+    return  res.status(400).json(new ApiError(400, "All fields are required"));
     }
 
     let markscardURL = await uploadOnCloudinary(req.files.marksCard[0].path);
@@ -176,8 +179,9 @@ export const bookHostelRoom = async (req, res) => {
 
     const hostel = await Hostel.findOne({ hostelId });
     if (!hostel) return res.status(404).json(new ApiError(404, "Hostel not found"));
-
+    
     const admission = await Admission.findOne({ email: studentEmail });
+    console.log(admission);
     if (!admission) return res.status(404).json(new ApiError(404, "Admission not found"));
     if (admission.admissionStatus !== "verified") {
       return res.status(400).json(new ApiError(400, "Admission not verified"));
@@ -218,7 +222,7 @@ export const bookHostelRoom = async (req, res) => {
     admission.feesToBePaid += roomFound.pricePerStudent;
     roomFound.bookedBy.push(studentId);
     admission.bookedRoom = roomFound;
-    admission.bookedRoomInWhichHostel = hostel.hostelId;
+    admission.bookedRoomInWhichHostel =new mongoose.Types.ObjectId(hostel._id);
 
     await hostel.save();
     await admission.save();
@@ -405,7 +409,7 @@ export const studentCredentialsGeneration = async (req, res) => {
     admission.credentialsGenerated = true;
     await admission.save();
 
-    await Temp.deleteOne({ name: admission.fullName });
+    await Temp.deleteOne({ name: admission.name });
 
     // Create fee record
     const fee = await Fee.create({
@@ -424,7 +428,6 @@ export const studentCredentialsGeneration = async (req, res) => {
     res.status(500).json(new ApiError(500, err.message));
   }
 }
-
 
 // 5. Get Admission Details
 export const getAdmissionDetails = async (req, res) => {

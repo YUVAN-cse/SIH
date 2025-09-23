@@ -69,7 +69,8 @@ const admissionSchema = new mongoose.Schema(
         //set by admin based on admission type like tuition fee for sc st etc
         feesToBePaid: {
             type: Number,
-            required: true
+            required: true,
+            default:22000,
         },
 
         //  Payment details
